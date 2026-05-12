@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Window Cleaning Manager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --sky: #d4eaf7;
+    --ink: #1a2030;
+    --slate: #3d5066;
+    --mist: #eef4f9;
+    --glass: #f7fbff;
+    --accent: #2d7dd2;
+    --green: #2ecc71;
+    --amber: #f39c12;
+    --red: #e74c3c;
+    --border: #c8dcea;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Playfair Display', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--glass);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--ink);
+    color: white;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--sky);
+    letter-spacing: 0.02em;
+  }
+
+  header .subtitle {
+    font-size: 0.75rem;
+    color: #7a9ab5;
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
+  .header-icon { font-size: 2rem; }
+
+  nav {
+    background: var(--mist);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  nav button {
+    padding: 12px 22px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--slate);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  nav button.active {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+    background: white;
+  }
+
+  nav button:hover:not(.active) { background: #e0edf6; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+  /* AI COMMAND BAR */
+  .ai-bar {
+    background: var(--ink);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .ai-bar .ai-label {
+    color: var(--sky);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    background: #2d3a4a;
+    border-radius: 6px;
+    padding: 5px 9px;
+  }
+
+  .ai-bar input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: white;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    outline: none;
+  }
+
+  .ai-bar input::placeholder { color: #5a7a95; }
+
+  .ai-bar button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: background 0.15s;
+  }
+
+  .ai-bar button:hover { background: #2568b8; }
+
+  .ai-feedback {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: var(--mono);
+    display: none;
+  }
+
+  .ai-feedback.success { background: #d4edda; color: #155724; display: block; }
+  .ai-feedback.error { background: #f8d7da; color: #721c24; display: block; }
+  .ai-feedback.info { background: #d1ecf1; color: #0c5460; display: block; }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .card-header {
+    background: var(--mist);
+    padding: 14px 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: center;
+  }
+
+  .stat-card .num {
+    font-family: var(--serif);
+    font-size: 2rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-card .lbl {
+    font-size: 0.75rem;
+    color: var(--slate);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--slate);
+    border-bottom: 2px solid var(--border);
+    background: var(--mist);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #eef2f6;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f5f9ff; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    font-family: var(--mono);
+  }
+
+  .badge-green { background: #d4edda; color: #155724; }
+  .badge-amber { background: #fff3cd; color: #856404; }
+  .badge-red { background: #f8d7da; color: #721c24; }
+  .badge-blue { background: #d1ecf1; color: #0c5460; }
+  .badge-grey { background: #e2e8f0; color: #4a5568; }
+
+  /* DUE STATUS */
+  .due-ok { color: var(--green); font-weight: 500; }
+  .due-soon { color: var(--amber); font-weight: 500; }
+  .due-overdue { color: var(--red); font-weight: 500; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: var(--sans);
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #2568b8; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #27ae60; }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-ghost { background: var(--mist); color: var(--slate); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #dce8f0; }
+  .btn-sm { padding: 4px 9px; font-size: 0.76rem; }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .form-grid .full { grid-column: 1 / -1; }
+
+  label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--slate); margin-bottom: 5px; }
+
+  input[type="text"], input[type="date"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    background: var(--glass);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); background: white; }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .form-actions {
+    padding: 0 20px 20px;
+    display: flex;
+    gap: 10px;
+  }
+
+  /* SEARCH */
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .search-bar input { max-width: 320px; }
+
+  /* JOB SHEET */
+  .job-date-selector {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .job-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .job-card .job-check {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.15s;
+    margin-top: 2px;
+  }
+
+  .job-card .job-check.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .job-card .job-info { flex: 1; }
+  .job-card .job-name { font-weight: 600; font-size: 0.95rem; }
+  .job-card .job-addr { color: var(--slate); font-size: 0.82rem; margin-top: 2px; }
+  .job-card .job-notes {
+    color: #5a7a95;
+    font-size: 0.8rem;
+    margin-top: 6px;
+    background: var(--mist);
+    border-radius: 5px;
+    padding: 6px 9px;
+    font-style: italic;
+  }
+
+  .job-card.done { opacity: 0.55; }
+  .job-card.done .job-name { text-decoration: line-through; }
+
+  /* PRINT */
+  @media print {
+    header, nav, .ai-bar, .ai-feedback, .no-print { display: none !important; }
+    body { background: white; }
+    .container { padding: 0; }
+    .job-card { break-inside: avoid; }
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal {
+    background: white;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+
+  .modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--slate); }
+
+  .hidden { display: none !important; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8aa5bd;
+    font-size: 0.9rem;
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* Due today highlight */
+  .due-today-row td { background: #fffbf0 !important; }
+  .overdue-row td { background: #fff5f5 !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="header-icon">🪟</span>
+  <div>
+    <h1>Window Cleaning Manager</h1>
+    <div class="subtitle">Offline · All data saved locally</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+  <button onclick="showTab('customers')">Customers</button>
+  <button onclick="showTab('jobsheet')">Job Sheet</button>
+  <button onclick="showTab('add')">+ Add Customer</button>
+</nav>
+
+<div class="container">
+
+  <!-- AI COMMAND BAR (shown on all tabs) -->
+  <div class="ai-bar">
+    <span class="ai-label">⚡ Quick</span>
+    <input type="text" id="aiInput" placeholder='e.g. "Highview complete, rebook 6 weeks" or "add Grace and Mabel to today"' onkeydown="if(event.key==='Enter')runCommand()">
+    <button onclick="runCommand()">Go</button>
+  </div>
+  <div class="ai-feedback" id="aiFeedback"></div>
+
+  <!-- DASHBOARD -->
+  <div class="tab-content active" id="tab-dashboard">
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>⚠️ Overdue & Due Soon</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Address</th>
+            <th>Frequency</th>
+            <th>Last Done</th>
+            <th>Due</th>
+            <th>Status</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="dueSoonTable"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">All Upcoming</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Address</th>
+            <th>Freq</th>
+            <th>Last Done</th>
+            <th>Next Due</th>
+            <th>Status</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="allUpcomingTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="tab-content" id="tab-customers">
+    <div class="search-bar no-print">
+      <input type="text" id="searchInput" placeholder="Search by name or address…" oninput="renderCustomers()">
+      <span style="color:var(--slate);font-size:0.85rem;" id="custCount"></span>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Frequency</th>
+            <th>Price</th>
+            <th>Last Done</th>
+            <th>Next Due</th>
+            <th>Notes</th>
+            <th class="no-print">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="customerTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- JOB SHEET -->
+  <div class="tab-content" id="tab-jobsheet">
+    <div class="job-date-selector no-print">
+      <label style="margin:0">Date:</label>
+      <input type="date" id="jobDate" style="width:180px" onchange="renderJobSheet()">
+      <button class="btn btn-ghost" onclick="setToday()">Today</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+      <button class="btn btn-ghost" onclick="addAllDueToday()">Add All Due Today</button>
+    </div>
+    <div id="jobSheetContent"></div>
+  </div>
+
+  <!-- ADD / EDIT -->
+  <div class="tab-content" id="tab-add">
+    <div class="card">
+      <div class="card-header" id="formTitle">Add New Customer</div>
+      <div class="form-grid">
+        <div>
+          <label>Customer / Property Name *</label>
+          <input type="text" id="f_name" placeholder="e.g. Highview">
+        </div>
+        <div>
+          <label>Address *</label>
+          <input type="text" id="f_address" placeholder="e.g. Charlcombe Lane">
+        </div>
+        <div>
+          <label>Cleaning Frequency</label>
+          <select id="f_freq">
+            <option value="4">Every 4 weeks</option>
+            <option value="6">Every 6 weeks</option>
+            <option value="8">Every 8 weeks</option>
+            <option value="12">Every 12 weeks (quarterly)</option>
+            <option value="26">Every 26 weeks (6 months)</option>
+            <option value="52">Yearly</option>
+            <option value="0">Ad hoc (no schedule)</option>
+          </select>
+        </div>
+        <div>
+          <label>Price (£)</label>
+          <input type="number" id="f_price" placeholder="e.g. 35" min="0" step="0.50">
+        </div>
+        <div>
+          <label>Last Cleaned</label>
+          <input type="date" id="f_lastDone">
+        </div>
+        <div>
+          <label>Invoice Ref (Xero)</label>
+          <input type="text" id="f_invoice" placeholder="Xero ref or job code">
+        </div>
+        <div class="full">
+          <label>Notes (what to clean, access, special instructions)</label>
+          <textarea id="f_notes" placeholder="e.g. All external windows. Ring when there. Check gutters."></textarea>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="f_status">
+            <option value="active">Active</option>
+            <option value="booked">Booked In</option>
+            <option value="paused">Paused</option>
+          </select>
+        </div>
+        <div>
+          <label>Location Pin / Map Link</label>
+          <input type="text" id="f_pin" placeholder="Google Maps link or what3words">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay hidden" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Edit Customer</span>
+      <button onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="m_id">
+      <div>
+        <label>Name *</label>
+        <input type="text" id="m_name">
+      </div>
+      <div>
+        <label>Address *</label>
+        <input type="text" id="m_address">
+      </div>
+      <div>
+        <label>Frequency (weeks)</label>
+        <select id="m_freq">
+          <option value="4">Every 4 weeks</option>
+          <option value="6">Every 6 weeks</option>
+          <option value="8">Every 8 weeks</option>
+          <option value="12">Every 12 weeks</option>
+          <option value="26">Every 26 weeks</option>
+          <option value="52">Yearly</option>
+          <option value="0">Ad hoc</option>
+        </select>
+      </div>
+      <div>
+        <label>Price (£)</label>
+        <input type="number" id="m_price" step="0.50">
+      </div>
+      <div>
+        <label>Last Cleaned</label>
+        <input type="date" id="m_lastDone">
+      </div>
+      <div>
+        <label>Invoice Ref</label>
+        <input type="text" id="m_invoice">
+      </div>
+      <div class="full">
+        <label>Notes</label>
+        <textarea id="m_notes"></textarea>
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="m_status">
+          <option value="active">Active</option>
+          <option value="booked">Booked In</option>
+          <option value="paused">Paused</option>
+        </select>
+      </div>
+      <div>
+        <label>Location Pin</label>
+        <input type="text" id="m_pin">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="updateCustomer()">Update</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETE MODAL -->
+<div class="modal-overlay hidden" id="completeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="completeTitle">Mark Complete</span>
+      <button onclick="closeCompleteModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="c_id">
+      <div>
+        <label>Date Completed</label>
+        <input type="date" id="c_date">
+      </div>
+      <div>
+        <label>Rebook in how many weeks? (leave 0 = use default frequency)</label>
+        <input type="number" id="c_rebook" value="0" min="0">
+      </div>
+      <div class="full">
+        <label>Notes / Invoice ref</label>
+        <input type="text" id="c_notes" placeholder="Optional">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-success" onclick="doComplete()">✓ Mark Complete & Rebook</button>
+      <button class="btn btn-ghost" onclick="closeCompleteModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA STORE ───────────────────────────────────────────
+const STORE_KEY = 'wcm_customers_v2';
+const SHEET_KEY = 'wcm_jobsheet_v2';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch { return []; }
+}
+
+function save(data) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+function loadSheet() {
+  try { return JSON.parse(localStorage.getItem(SHEET_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveSheet(s) {
+  localStorage.setItem(SHEET_KEY, JSON.stringify(s));
+}
+
+// ─── SEED DATA ────────────────────────────────────────────
+function seedIfEmpty() {
+  if (load().length > 0) return;
+  const today = new Date();
+  const wksAgo = w => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - w * 7);
+    return d.toISOString().split('T')[0];
+  };
+
+  const seed = [
+    { name: 'Grace & Mabel', address: 'George Street', notes: '', freq: 6, price: '', lastDone: wksAgo(5), status: 'active', invoice: '', pin: '' },
+    { name: 'Comptoir + Cuisine', address: 'George Street', notes: '', freq: 4, price: '', lastDone: wksAgo(3), status: 'active', invoice: '', pin: '' },
+    { name: 'Castore', address: '1 Argyle Street, Pulteney Bridge', notes: 'All external windows inside & out.', freq: 6, price: '', lastDone: wksAgo(7), status: 'active', invoice: '', pin: '' },
+    { name: 'Wadswick Bath (prev. Orvis)', address: 'Pulteney Bridge', notes: 'All external windows.', freq: 6, price: '', lastDone: wksAgo(4), status: 'active', invoice: '', pin: '' },
+    { name: 'Griffin Inn', address: 'Monmouth Street', notes: 'All external windows. Clean pub windows on the inside if possible.', freq: 4, price: '', lastDone: wksAgo(5), status: 'active', invoice: '', pin: '' },
+    { name: '6 & 7 Gay Street', address: 'Gay Street', notes: 'All external windows. Ring when there. Both properties are offices — get through one to clean the rear.', freq: 6, price: '', lastDone: wksAgo(6), status: 'active', invoice: '', pin: '' },
+    { name: 'Highview', address: 'Charlcombe Lane', notes: '', freq: 6, price: '35', lastDone: wksAgo(8), status: 'active', invoice: '', pin: '' },
+    { name: 'The Glass House', address: 'Charlcombe Lane', notes: 'All external windows.', freq: 6, price: '', lastDone: wksAgo(3), status: 'active', invoice: '', pin: '' },
+    { name: 'Fordley', address: 'Charlcombe Lane', notes: 'All external windows.', freq: 6, price: '', lastDone: wksAgo(2), status: 'booked', invoice: '', pin: '' },
+    { name: 'Walpole House', address: 'Charlcombe Lane', notes: 'All external windows and skylights. Skylights at the side need to be done as well.', freq: 6, price: '', lastDone: wksAgo(1), status: 'booked', invoice: '', pin: '' },
+    { name: 'Stamford House', address: 'Charlcombe Lane', notes: 'All external windows. Asked to check the gutters as well.', freq: 6, price: '', lastDone: wksAgo(4), status: 'booked', invoice: '', pin: '' },
+  ];
+
+  const customers = seed.map((c, i) => ({ ...c, id: Date.now() + i }));
+  save(customers);
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function dateStr(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function addWeeks(dateStr, weeks) {
+  if (!dateStr || !weeks) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toISOString().split('T')[0];
+}
+
+function daysDiff(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function nextDue(c) {
+  if (!c.lastDone || !c.freq || c.freq == 0) return null;
+  return addWeeks(c.lastDone, parseInt(c.freq));
+}
+
+function statusBadge(days) {
+  if (days === null) return '<span class="badge badge-grey">No schedule</span>';
+  if (days < 0) return `<span class="badge badge-red">Overdue ${Math.abs(days)}d</span>`;
+  if (days === 0) return `<span class="badge badge-amber">Due today</span>`;
+  if (days <= 7) return `<span class="badge badge-amber">Due in ${days}d</span>`;
+  return `<span class="badge badge-green">Due in ${days}d</span>`;
+}
+
+function custStatusBadge(s) {
+  const m = { active: 'badge-blue', booked: 'badge-green', paused: 'badge-grey' };
+  return `<span class="badge ${m[s]||'badge-grey'}">${s}</span>`;
+}
+
+function newId() { return Date.now() + Math.floor(Math.random() * 1000); }
+
+// ─── TABS ─────────────────────────────────────────────────
+function showTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  const btns = document.querySelectorAll('nav button');
+  const map = ['dashboard','customers','jobsheet','add'];
+  const idx = map.indexOf(t);
+  if (idx >= 0) btns[idx].classList.add('active');
+  if (t === 'dashboard') renderDashboard();
+  if (t === 'customers') renderCustomers();
+  if (t === 'jobsheet') renderJobSheet();
+  if (t === 'add') { clearForm(); }
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────
+function renderDashboard() {
+  const data = load();
+  const todayStr = today();
+
+  const overdue = data.filter(c => { const d = nextDue(c); return d && d < todayStr; });
+  const dueSoon = data.filter(c => { const d = nextDue(c); if (!d) return false; const diff = daysDiff(d); return diff !== null && diff >= 0 && diff <= 14; });
+  const active = data.filter(c => c.status !== 'paused');
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${data.length}</div><div class="lbl">Total Customers</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--red)">${overdue.length}</div><div class="lbl">Overdue</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--amber)">${dueSoon.length}</div><div class="lbl">Due This Fortnight</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--green)">${active.length}</div><div class="lbl">Active</div></div>
+  `;
+
+  const urgent = [...overdue, ...dueSoon.filter(c => !overdue.includes(c))].sort((a,b) => {
+    const da = nextDue(a)||'9999', db = nextDue(b)||'9999';
+    return da.localeCompare(db);
+  });
+
+  const dueSoonTable = document.getElementById('dueSoonTable');
+  if (urgent.length === 0) {
+    dueSoonTable.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">✅</div>Nothing overdue or due soon!</div></td></tr>';
+  } else {
+    dueSoonTable.innerHTML = urgent.map(c => {
+      const nd = nextDue(c);
+      const diff = daysDiff(nd);
+      return `<tr class="${diff < 0 ? 'overdue-row' : diff === 0 ? 'due-today-row' : ''}">
+        <td><strong>${c.name}</strong></td>
+        <td>${c.address}</td>
+        <td>${c.freq ? c.freq+'w' : '—'}</td>
+        <td>${dateStr(c.lastDone)||'—'}</td>
+        <td>${dateStr(nd)||'—'}</td>
+        <td>${statusBadge(diff)}</td>
+        <td class="no-print"><div style="display:flex;gap:6px">
+          <button class="btn btn-success btn-sm" onclick="openCompleteModal(${c.id})">✓ Done</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEdit(${c.id})">Edit</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  const allSorted = [...data].sort((a,b) => {
+    const da = nextDue(a)||'9999', db = nextDue(b)||'9999';
+    return da.localeCompare(db);
+  });
+
+  document.getElementById('allUpcomingTable').innerHTML = allSorted.map(c => {
+    const nd = nextDue(c);
+    const diff = daysDiff(nd);
+    return `<tr class="${diff !== null && diff < 0 ? 'overdue-row' : ''}">
+      <td><strong>${c.name}</strong></td>
+      <td>${c.address}</td>
+      <td>${c.freq ? c.freq+'w' : 'Ad hoc'}</td>
+      <td>${dateStr(c.lastDone)||'—'}</td>
+      <td>${dateStr(nd)||'—'}</td>
+      <td>${statusBadge(diff)}</td>
+      <td class="no-print"><div style="display:flex;gap:6px">
+        <button class="btn btn-success btn-sm" onclick="openCompleteModal(${c.id})">✓ Done</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEdit(${c.id})">Edit</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CUSTOMERS ────────────────────────────────────────────
+function renderCustomers() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let data = load();
+  if (q) data = data.filter(c => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
+  document.getElementById('custCount').textContent = `${data.length} customer${data.length!==1?'s':''}`;
+
+  data.sort((a,b) => a.name.localeCompare(b.name));
+
+  document.getElementById('customerTable').innerHTML = data.map(c => {
+    const nd = nextDue(c);
+    return `<tr>
+      <td><strong>${c.name}</strong><br>${custStatusBadge(c.status)}</td>
+      <td>${c.address}</td>
+      <td>${c.freq ? c.freq+' weeks' : 'Ad hoc'}</td>
+      <td>${c.price ? '£'+c.price : '—'}</td>
+      <td>${dateStr(c.lastDone)||'—'}</td>
+      <td>${statusBadge(daysDiff(nd))}</td>
+      <td style="max-width:200px;font-size:0.8rem;color:var(--slate)">${c.notes||'—'}</td>
+      <td class="no-print"><div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-success btn-sm" onclick="openCompleteModal(${c.id})">✓ Done</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEdit(${c.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Del</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── JOB SHEET ────────────────────────────────────────────
+function setToday() {
+  document.getElementById('jobDate').value = today();
+  renderJobSheet();
+}
+
+function renderJobSheet() {
+  const dateVal = document.getElementById('jobDate').value || today();
+  const sheet = loadSheet();
+  const daySheet = sheet[dateVal] || [];
+  const data = load();
+
+  const jobs = daySheet.map(id => data.find(c => c.id == id)).filter(Boolean);
+
+  const el = document.getElementById('jobSheetContent');
+
+  if (jobs.length === 0) {
+    el.innerHTML = `<div class="empty-state" style="border:2px dashed var(--border);border-radius:12px;padding:40px">
+      <div class="icon">📋</div>
+      <div>No jobs on this sheet yet.</div>
+      <div style="margin-top:10px">Use the quick command bar: <strong>"add Highview to today"</strong><br>or click a customer in the dashboard and add them.</div>
+    </div>`;
+    return;
+  }
+
+  const done = jobs.filter(j => {
+    const sd = (sheet[dateVal + '_done'] || []);
+    return sd.includes(j.id);
+  });
+
+  el.innerHTML = `
+    <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap" class="no-print">
+      <span style="font-size:0.85rem;color:var(--slate)">${jobs.length} job${jobs.length!==1?'s':''} · ${done.length} done</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearJobSheet()">Clear Sheet</button>
+    </div>
+    <div style="font-family:var(--serif);font-size:1.3rem;margin-bottom:16px;color:var(--ink)">
+      Job Sheet — ${new Date(dateVal+'T00:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+    </div>
+    ${jobs.map(j => {
+      const doneLst = sheet[dateVal + '_done'] || [];
+      const isDone = doneLst.includes(j.id);
+      return `<div class="job-card ${isDone?'done':''}">
+        <div class="job-check ${isDone?'checked':''}" onclick="toggleJobDone(${j.id},'${dateVal}')">${isDone?'✓':''}</div>
+        <div class="job-info">
+          <div class="job-name">${j.name}</div>
+          <div class="job-addr">📍 ${j.address}${j.pin ? ` · <a href="${j.pin}" target="_blank">Map</a>` : ''}</div>
+          ${j.notes ? `<div class="job-notes">${j.notes}</div>` : ''}
+          ${j.price ? `<div style="margin-top:6px;font-size:0.82rem;font-weight:600;color:var(--accent)">£${j.price}</div>` : ''}
+        </div>
+        <button class="btn btn-danger btn-sm no-print" onclick="removeFromSheet(${j.id},'${dateVal}')">Remove</button>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function toggleJobDone(id, dateVal) {
+  const sheet = loadSheet();
+  const key = dateVal + '_done';
+  if (!sheet[key]) sheet[key] = [];
+  const idx = sheet[key].indexOf(id);
+  if (idx >= 0) sheet[key].splice(idx, 1);
+  else sheet[key].push(id);
+  saveSheet(sheet);
+  renderJobSheet();
+}
+
+function removeFromSheet(id, dateVal) {
+  const sheet = loadSheet();
+  if (!sheet[dateVal]) return;
+  sheet[dateVal] = sheet[dateVal].filter(i => i != id);
+  saveSheet(sheet);
+  renderJobSheet();
+}
+
+function addToSheet(id, dateVal) {
+  const sheet = loadSheet();
+  if (!sheet[dateVal]) sheet[dateVal] = [];
+  if (!sheet[dateVal].includes(id)) sheet[dateVal].push(id);
+  saveSheet(sheet);
+}
+
+function addAllDueToday() {
+  const data = load();
+  const todayStr = today();
+  const dateVal = document.getElementById('jobDate').value || todayStr;
+  const sheet = loadSheet();
+  if (!sheet[dateVal]) sheet[dateVal] = [];
+
+  let added = 0;
+  data.forEach(c => {
+    const nd = nextDue(c);
+    const diff = daysDiff(nd);
+    if (nd && (diff === 0 || (diff !== null && diff < 0)) && !sheet[dateVal].includes(c.id)) {
+      sheet[dateVal].push(c.id);
+      added++;
+    }
+  });
+
+  saveSheet(sheet);
+  renderJobSheet();
+  feedback(`Added ${added} overdue/due customers to the job sheet.`, 'info');
+}
+
+function clearJobSheet() {
+  const dateVal = document.getElementById('jobDate').value || today();
+  if (!confirm('Clear all jobs from this sheet?')) return;
+  const sheet = loadSheet();
+  delete sheet[dateVal];
+  delete sheet[dateVal + '_done'];
+  saveSheet(sheet);
+  renderJobSheet();
+}
+
+// ─── ADD / EDIT ───────────────────────────────────────────
+function saveCustomer() {
+  const name = document.getElementById('f_name').value.trim();
+  const address = document.getElementById('f_address').value.trim();
+  if (!name || !address) { alert('Name and address are required.'); return; }
+
+  const c = {
+    id: newId(),
+    name,
+    address,
+    freq: document.getElementById('f_freq').value,
+    price: document.getElementById('f_price').value,
+    lastDone: document.getElementById('f_lastDone').value,
+    invoice: document.getElementById('f_invoice').value,
+    notes: document.getElementById('f_notes').value,
+    status: document.getElementById('f_status').value,
+    pin: document.getElementById('f_pin').value,
+  };
+
+  const data = load();
+  data.push(c);
+  save(data);
+  clearForm();
+  feedback(`${name} added successfully.`, 'success');
+  showTab('customers');
+}
+
+function clearForm() {
+  ['f_name','f_address','f_price','f_lastDone','f_invoice','f_notes','f_pin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f_freq').value = '6';
+  document.getElementById('f_status').value = 'active';
+  document.getElementById('formTitle').textContent = 'Add New Customer';
+}
+
+function deleteCustomer(id) {
+  const data = load();
+  const c = data.find(x => x.id == id);
+  if (!confirm(`Delete ${c?.name}? This cannot be undone.`)) return;
+  save(data.filter(x => x.id != id));
+  renderCustomers();
+  renderDashboard();
+}
+
+// ─── EDIT MODAL ───────────────────────────────────────────
+function openEdit(id) {
+  const data = load();
+  const c = data.find(x => x.id == id);
+  if (!c) return;
+  document.getElementById('m_id').value = c.id;
+  document.getElementById('m_name').value = c.name;
+  document.getElementById('m_address').value = c.address;
+  document.getElementById('m_freq').value = c.freq;
+  document.getElementById('m_price').value = c.price;
+  document.getElementById('m_lastDone').value = c.lastDone || '';
+  document.getElementById('m_invoice').value = c.invoice || '';
+  document.getElementById('m_notes').value = c.notes || '';
+  document.getElementById('m_status').value = c.status || 'active';
+  document.getElementById('m_pin').value = c.pin || '';
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+function updateCustomer() {
+  const id = parseInt(document.getElementById('m_id').value);
+  const data = load();
+  const idx = data.findIndex(x => x.id == id);
+  if (idx < 0) return;
+  data[idx] = { ...data[idx],
+    name: document.getElementById('m_name').value.trim(),
+    address: document.getElementById('m_address').value.trim(),
+    freq: document.getElementById('m_freq').value,
+    price: document.getElementById('m_price').value,
+    lastDone: document.getElementById('m_lastDone').value,
+    invoice: document.getElementById('m_invoice').value,
+    notes: document.getElementById('m_notes').value,
+    status: document.getElementById('m_status').value,
+    pin: document.getElementById('m_pin').value,
+  };
+  save(data);
+  closeModal();
+  renderCustomers();
+  renderDashboard();
+  feedback(`${data[idx].name} updated.`, 'success');
+}
+
+// ─── COMPLETE MODAL ───────────────────────────────────────
+function openCompleteModal(id) {
+  const data = load();
+  const c = data.find(x => x.id == id);
+  if (!c) return;
+  document.getElementById('c_id').value = id;
+  document.getElementById('c_date').value = today();
+  document.getElementById('c_rebook').value = c.freq || 6;
+  document.getElementById('c_notes').value = '';
+  document.getElementById('completeTitle').textContent = `✓ Complete: ${c.name}`;
+  document.getElementById('completeModal').classList.remove('hidden');
+}
+
+function closeCompleteModal() { document.getElementById('completeModal').classList.add('hidden'); }
+
+function doComplete() {
+  const id = parseInt(document.getElementById('c_id').value);
+  const doneDate = document.getElementById('c_date').value;
+  const rebookWeeks = parseInt(document.getElementById('c_rebook').value) || 0;
+
+  const data = load();
+  const idx = data.findIndex(x => x.id == id);
+  if (idx < 0) return;
+
+  data[idx].lastDone = doneDate;
+  if (rebookWeeks > 0) data[idx].freq = rebookWeeks;
+
+  save(data);
+  closeCompleteModal();
+  renderDashboard();
+  renderCustomers();
+  const nd = nextDue(data[idx]);
+  feedback(`✓ ${data[idx].name} marked complete on ${dateStr(doneDate)}. Next due: ${dateStr(nd)||'—'}`, 'success');
+}
+
+// ─── AI COMMAND PARSER ────────────────────────────────────
+function feedback(msg, type) {
+  const el = document.getElementById('aiFeedback');
+  el.textContent = msg;
+  el.className = 'ai-feedback ' + type;
+  setTimeout(() => { el.className = 'ai-feedback'; }, 5000);
+}
+
+function runCommand() {
+  const raw = document.getElementById('aiInput').value.trim();
+  if (!raw) return;
+  const cmd = raw.toLowerCase();
+  const data = load();
+
+  // Find best matching customer
+  function findCustomer(text) {
+    let best = null, bestScore = 0;
+    data.forEach(c => {
+      const name = c.name.toLowerCase();
+      const addr = c.address.toLowerCase();
+      // exact
+      if (text.includes(name)) { best = c; bestScore = 100; return; }
+      // partial word match
+      const nameWords = name.split(/\s+/);
+      const matches = nameWords.filter(w => w.length > 3 && text.includes(w)).length;
+      if (matches > bestScore) { bestScore = matches; best = c; }
+      // address match
+      const addrWords = addr.split(/\s+/);
+      const amatches = addrWords.filter(w => w.length > 3 && text.includes(w)).length;
+      if (amatches > bestScore) { bestScore = amatches; best = c; }
+    });
+    return bestScore > 0 ? best : null;
+  }
+
+  function extractWeeks(text) {
+    const m = text.match(/(\d+)\s*week/);
+    if (m) return parseInt(m[1]);
+    const m2 = text.match(/(\d+)\s*w\b/);
+    if (m2) return parseInt(m2[1]);
+    return null;
+  }
+
+  function extractDate(text) {
+    const today2 = today();
+    if (text.includes('today')) return today2;
+    if (text.includes('tomorrow')) { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; }
+    const m = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+    if (m) {
+      const yr = m[3] ? (m[3].length===2?'20'+m[3]:m[3]) : new Date().getFullYear();
+      return `${yr}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    }
+    return today2;
+  }
+
+  // ─ COMPLETE + REBOOK ─
+  if (cmd.includes('complet') || cmd.includes('done') || cmd.includes('finish')) {
+    const c = findCustomer(cmd);
+    if (!c) { feedback('❓ Could not find that customer. Try including their name or address.', 'error'); return; }
+    const weeks = extractWeeks(cmd);
+    const doneDate = today();
+    const idx = data.findIndex(x => x.id === c.id);
+    data[idx].lastDone = doneDate;
+    if (weeks) data[idx].freq = weeks;
+    save(data);
+    const nd = nextDue(data[idx]);
+    renderDashboard();
+    feedback(`✓ ${c.name} marked complete. ${weeks?'Rebooked for '+weeks+' weeks.':''} Next due: ${dateStr(nd)||'—'}`, 'success');
+    document.getElementById('aiInput').value = '';
+    return;
+  }
+
+  // ─ ADD TO JOB SHEET ─
+  if (cmd.includes('add') && (cmd.includes('today') || cmd.includes('sheet') || cmd.includes('tomorrow') || cmd.includes('/'))) {
+    const c = findCustomer(cmd);
+    if (!c) { feedback('❓ Could not find that customer.', 'error'); return; }
+    const dateVal = extractDate(cmd);
+    addToSheet(c.id, dateVal);
+    feedback(`📋 ${c.name} added to job sheet for ${dateStr(dateVal)}.`, 'success');
+    document.getElementById('aiInput').value = '';
+    document.getElementById('jobDate').value = dateVal;
+    showTab('jobsheet');
+    return;
+  }
+
+  // ─ REBOOK ─
+  if (cmd.includes('rebook') || cmd.includes('reschedule')) {
+    const c = findCustomer(cmd);
+    if (!c) { feedback('❓ Could not find that customer.', 'error'); return; }
+    const weeks = extractWeeks(cmd);
+    if (!weeks) { feedback('⚠️ Please specify a number of weeks, e.g. "rebook Highview 6 weeks"', 'error'); return; }
+    const idx = data.findIndex(x => x.id === c.id);
+    data[idx].freq = weeks;
+    const nd = addWeeks(data[idx].lastDone || today(), weeks);
+    save(data);
+    renderDashboard();
+    feedback(`📅 ${c.name} rebooked every ${weeks} weeks. Next due: ${dateStr(nd)}.`, 'success');
+    document.getElementById('aiInput').value = '';
+    return;
+  }
+
+  // ─ FIND / SEARCH ─
+  if (cmd.includes('find') || cmd.includes('search') || cmd.includes('show')) {
+    const c = findCustomer(cmd);
+    if (!c) { feedback('❓ Could not find that customer.', 'error'); return; }
+    const nd = nextDue(c);
+    const diff = daysDiff(nd);
+    feedback(`🔍 ${c.name} · ${c.address} · Last done: ${dateStr(c.lastDone)||'never'} · Next due: ${dateStr(nd)||'—'} (${diff!==null?(diff<0?Math.abs(diff)+'d overdue':diff+'d away'):'no schedule'})`, 'info');
+    document.getElementById('aiInput').value = '';
+    return;
+  }
+
+  feedback('🤔 Not sure what to do. Try: "Highview complete rebook 6 weeks" or "add Griffin Inn to today" or "rebook Walpole House 8 weeks"', 'error');
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+seedIfEmpty();
+setToday();
+renderDashboard();
+
+// Export/Import
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'e') {
+    const data = localStorage.getItem(STORE_KEY);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wcm-backup-' + today() + '.json';
+    a.click();
+  }
+});
+</script>
+</body>
+</html>
